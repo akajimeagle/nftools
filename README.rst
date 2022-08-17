@@ -39,11 +39,11 @@ Getting Started
 ----------------
 With requirements installed, and python3.7 active and on path (or in virtual environment):
 
-- Install nftools: `pip install nftools`
-- Verify installation: `nftools --version`
-    - If successful, should output `nftools, version 1.0.6`
-- View available methods: `nftools --help`
-- Run your first command: `nftools snapshot`
+- Install nftools: :code:`pip install nftools`
+- Verify installation: :code:`nftools --version`
+    - If successful, should output :code:`nftools, version 1.0.7a`
+- View available methods: :code:`nftools --help`
+- Run your first command: :code:`nftools snapshot`
 
 
 

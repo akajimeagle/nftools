@@ -17,7 +17,6 @@ A CLI for managing your solana nft collection.
 
 
 * Free software: MIT license
-* Documentation: https://nftools.readthedocs.io.
 
 
 Requirements
@@ -34,6 +33,17 @@ Requirements
 - `spl-token-cli`_ installed.
 
 .. _spl-token-cli: https://spl.solana.com/token
+
+
+Getting Started
+----------------
+With requirements installed, and python3.7 active and on path (or in virtual environment):
+
+- Install nftools: `pip install nftools`
+- Verify installation: `nftools --version`
+    - If successful, should output `nftools, version 1.0.6`
+- View available methods: `nftools --help`
+- Run your first command: `nftools snapshot`
 
 
 

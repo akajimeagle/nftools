@@ -32,10 +32,11 @@ def get_rpc():
 
 def update_rpc(rpc):
     command = ['solana', 'config', 'set', '-u', rpc]
+    print(rpc)
     process = run_command(command)
 
     if process.returncode != 0:
-        logger.warning('RPC updat failed, exiting.')
+        logger.warning(f'RPC update failed, exiting. {process.stderr}')
         sys.exit(1)
 
     logger.info(process.stdout)
@@ -112,7 +113,13 @@ async def get_mp_metadata(session: ClientSession, token_id, rpc):
         ]
     }
     async with session.post(rpc, data=json.dumps(post_data), headers={'Content-Type': 'application/json'}) as resp:
+        if resp.status != 200:
+            logger.error(resp.status)
+            logger.error(resp.content)
+        text = await resp.text()
         r = await resp.json()
+
+
         data_encoded = r['result']['value']['data'][0]
         data_bytes = base64.b64decode(data_encoded)
         metadata = unpack_mp_metadata(data_bytes)

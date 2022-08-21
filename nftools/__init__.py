@@ -7,7 +7,7 @@ from nftools.objects import ColorHandler
 
 __author__ = """Jim Eagle"""
 __email__ = 'akajimeagle@pm.me'
-__version__ = '1.0.8'
+__version__ = '1.0.9'
 
 logging.basicConfig(level=logging.INFO, handlers=[ColorHandler()])
 logger = logging.getLogger(__name__)

@@ -180,7 +180,7 @@ def get_metaplex_metadata_accounts(first_creator: str, rpc: str, *, refresh: boo
             }
         ]
     }
-    logger.info(f'Getting Metadate Mint Accounts for {first_creator}.')
+    logger.info(f'Getting Metadata Mint Accounts for {first_creator}.')
     logger.info('Please be patient. This typically takes 5-10 minutes, depending on collection size.')
     save_dir = os.path.join(OUTPUT_DIR, 'metadata_tokens')
     if not os.path.exists(save_dir):

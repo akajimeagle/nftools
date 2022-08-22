@@ -11,7 +11,10 @@ import base58
 import pandas as pd
 import requests
 from aiohttp import ClientSession
+from aiolimiter import AsyncLimiter
+
 from nftools import OUTPUT_DIR
+from nftools.types.metaplex import MetaplexNFT
 
 from nftools.utils import run_command, string_between, shorten_rpc
 
@@ -32,7 +35,6 @@ def get_rpc():
 
 def update_rpc(rpc):
     command = ['solana', 'config', 'set', '-u', rpc]
-    print(rpc)
     process = run_command(command)
 
     if process.returncode != 0:
@@ -119,7 +121,6 @@ async def get_mp_metadata(session: ClientSession, token_id, rpc):
         text = await resp.text()
         r = await resp.json()
 
-
         data_encoded = r['result']['value']['data'][0]
         data_bytes = base64.b64decode(data_encoded)
         metadata = unpack_mp_metadata(data_bytes)
@@ -128,7 +129,6 @@ async def get_mp_metadata(session: ClientSession, token_id, rpc):
 
 async def get_account_info(session: ClientSession, token_id, rpc):
     data = {"method": "getAccountInfo", "jsonrpc": "2.0", "params": [token_id, {"encoding": "jsonParsed"}], "id": "1"}
-    # print(data)
     async with session.post(rpc, data=json.dumps(data), headers={'Content-Type': 'application/json'}) as resp:
         content = await resp.content.read()
         r = json.loads(content.decode('utf-8'))
@@ -156,9 +156,57 @@ async def get_nft_token_account(session: ClientSession, token_id, rpc):
     return get_owner(holders)
 
 
-def get_metaplex_metadata_accounts(first_creator: str, rpc: str, *, refresh: bool) -> List[str]:
+async def get_token_account(session: ClientSession, nft: MetaplexNFT, rpc) -> str:
+    def get_owner(owners) -> str:
+        for row in owners:
+            if row['amount'] == '1':
+                return row['address']
+
+    async def handle_response(r) -> str:
+
+        # Handle Rate Limit
+        if r.status == 429:
+            time.sleep(.2)
+            logger.warning('Rate Limit: 429')
+            return await get_token_account(session, nft, rpc)
+
+        # Handle Errors
+        elif r.status != 200:
+            return await r.text()
+
+        response_data = await resp.json()
+        holders = response_data['result']['value']
+        return get_owner(holders)
+
+    data = {"method": "getTokenLargestAccounts", "jsonrpc": "2.0", "params": [nft.mint_pubkey], "id": "1"}
+    async with session.post(rpc, data=json.dumps(data), headers={'Content-Type': 'application/json'}) as resp:
+        return await handle_response(resp)
+
+
+async def get_token_owner(session: ClientSession, nft: MetaplexNFT, rpc: str) -> str:
+    async def handle_response(r) -> str:
+        # Handle Rate Limits
+        if r.status == 429:
+            time.sleep(.2)
+            return await get_token_owner(session, nft, rpc)
+
+        # Handle Errors
+        elif r.status != 200:
+            content = await resp.content.read()
+            raise ValueError(f'Error Code #{r.status}: [{content}]')
+
+        response_data = await r.json()
+        return response_data['result']['value']['data']['parsed']['info']['owner']
+
+    data = {"method": "getAccountInfo", "jsonrpc": "2.0", "params": [nft.token_account, {"encoding": "jsonParsed"}],
+            "id": "1"}
+    async with session.post(rpc, data=json.dumps(data), headers={'Content-Type': 'application/json'}) as resp:
+        return await handle_response(resp)
+
+
+def get_metaplex_metadata_accounts(collection_creator: str, rpc: str, *, refresh: bool) -> List[MetaplexNFT]:
     """
-    Calls getProgramAccounts with Metaplex Metadata Program:
+    Return Metadata Account Pubkeys for Specified Candy Machine
         - Offset 326: [Creater One]
     :param cmid: Candy Machine
     :type cmid:
@@ -174,19 +222,19 @@ def get_metaplex_metadata_accounts(first_creator: str, rpc: str, *, refresh: boo
             {
                 "encoding": "base64",
                 "filters": [
-                    {"memcmp": {"offset": 326, "bytes": f"{first_creator}"}},
+                    {"memcmp": {"offset": 326, "bytes": f"{collection_creator}"}},
                     {"memcmp": {"offset": 358, "bytes": "2"}}
                 ]
             }
         ]
     }
-    logger.info(f'Getting Metadata Mint Accounts for {first_creator}.')
+    logger.info(f'Getting Metadata Mint Accounts for {collection_creator}.')
     logger.info('Please be patient. This typically takes 5-10 minutes, depending on collection size.')
     save_dir = os.path.join(OUTPUT_DIR, 'metadata_tokens')
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
 
-    save_path = os.path.join(save_dir, f'{first_creator}.json')
+    save_path = os.path.join(save_dir, f'{collection_creator}.json')
 
     if os.path.exists(save_path) and not refresh:
         logger.warning(f'Data already exists in {save_path}.')
@@ -222,5 +270,9 @@ def get_metaplex_metadata_accounts(first_creator: str, rpc: str, *, refresh: boo
         with open(save_path, 'w') as f:
             f.write(json.dumps(data))
 
-    mints = [r['pubkey'] for r in data['result']]
-    return mints
+    nfts = []
+    for row in data['result']:
+        nfts.append(
+            MetaplexNFT.from_bytes(pubkey=row['pubkey'], encoded_data=base64.b64decode(row['account']['data'][0])))
+
+    return nfts

@@ -73,6 +73,7 @@ async def get_nfts(collection_creator, rpc, *, refresh) -> List[MetaplexNFT]:
 
         output = await asyncio.gather(*tasks)
     logger.info(f'Fetching NFT data took: {start_time * -1 + time.process_time()} seconds')
+
     return output
 
 

@@ -275,4 +275,5 @@ def get_metaplex_metadata_accounts(collection_creator: str, rpc: str, *, refresh
         nfts.append(
             MetaplexNFT.from_bytes(pubkey=row['pubkey'], encoded_data=base64.b64decode(row['account']['data'][0])))
 
+    logger.info(f'Successfully retrieved {len(nfts)} NFTs.')
     return nfts

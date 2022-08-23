@@ -103,7 +103,7 @@ def snapshot(collection_creator, fmt, rpc, refresh, output):
 @click.option('--refresh', is_flag=True, help='Refresh metadata accounts (new mints, updated metadata).')
 @click.option('--output', '-o', required=False, show_default=False, help="Choose an output path.")
 def get_metadata(collection_creator, rpc, refresh, output):
-    """Takes snapshot of [owner, token_account, mint_id] and saves in the specified format."""
+    """Gets NFT Token Metadata (On Chain) and saves in a .json file."""
     asyncio.run(
         dl_metadata(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, output=output))
 

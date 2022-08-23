@@ -133,8 +133,11 @@ async def get_account_info(session: ClientSession, token_id, rpc):
         content = await resp.content.read()
         r = json.loads(content.decode('utf-8'))
         try:
-            return r['result']['value']['data']['parsed']['info']['owner']
+            data = r['result']['value']['data'][0]
+            return base64.b64decode(data)
+
         except Exception:
+            print(sys.exc_info())
             return await get_account_info(session, token_id, rpc)
 
 
@@ -166,8 +169,7 @@ async def get_token_account(session: ClientSession, nft: MetaplexNFT, rpc) -> st
 
         # Handle Rate Limit
         if r.status == 429:
-            time.sleep(.2)
-            logger.warning('Rate Limit: 429')
+            logger.debug('Rate Limit: 429')
             return await get_token_account(session, nft, rpc)
 
         # Handle Errors
@@ -175,6 +177,11 @@ async def get_token_account(session: ClientSession, nft: MetaplexNFT, rpc) -> st
             return await r.text()
 
         response_data = await resp.json()
+        error = response_data.get('error', None)
+        if error is not None:
+            print(error)
+            logger.error(f'{nft.mint_pubkey} not found. Check https://solscan.io/account/{nft.mint_pubkey}/')
+            sys.exit(0)
         holders = response_data['result']['value']
         return get_owner(holders)
 
@@ -187,7 +194,6 @@ async def get_token_owner(session: ClientSession, nft: MetaplexNFT, rpc: str) ->
     async def handle_response(r) -> str:
         # Handle Rate Limits
         if r.status == 429:
-            time.sleep(.2)
             return await get_token_owner(session, nft, rpc)
 
         # Handle Errors

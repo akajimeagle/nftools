@@ -6,10 +6,11 @@ import click
 
 from nftools import __version__
 from nftools.create_whitelist_token import create_wl_token
-from nftools.download import dl_snapshot, dl_owners, dl_hashlist
+from nftools.download import dl_snapshot, dl_owners, dl_hashlist, dl_metadata
 from nftools.solana import get_rpc, update_rpc
 from nftools.utils import query_yes_no, shorten_rpc
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +56,8 @@ def create_whitelist_token(amount, rpc):
 @click.option('--output', '-o', required=False, show_default=False, help="Choose an output path.")
 def get_hash_list(collection_creator, fmt, rpc, refresh, output):
     """Retrieves hash list of collection and saves in specified format"""
-    asyncio.run(dl_hashlist(collection_creator=collection_creator, rpc=rpc, refresh=refresh, fmt=fmt, output=output))
+    asyncio.run(
+        dl_hashlist(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, fmt=fmt, output=output))
 
 
 @main.command()
@@ -71,7 +73,8 @@ def get_hash_list(collection_creator, fmt, rpc, refresh, output):
 @click.option('--output', '-o', required=False, show_default=False, help="Choose an output path.")
 def get_owners(collection_creator, fmt, rpc, refresh, output):
     """Retrieves amount of collection nfts held by owner and saves in specified format"""
-    asyncio.run(dl_owners(collection_creator=collection_creator, rpc=rpc, refresh=refresh, fmt=fmt, output=output))
+    asyncio.run(
+        dl_owners(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, fmt=fmt, output=output))
 
 
 @main.command()
@@ -87,7 +90,25 @@ def get_owners(collection_creator, fmt, rpc, refresh, output):
 @click.option('--output', '-o', required=False, show_default=False, help="Choose an output path.")
 def snapshot(collection_creator, fmt, rpc, refresh, output):
     """Takes snapshot of [owner, token_account, mint_id] and saves in the specified format."""
-    asyncio.run(dl_snapshot(collection_creator=collection_creator, rpc=rpc, refresh=refresh, fmt=fmt, output=output))
+    asyncio.run(
+        dl_snapshot(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, fmt=fmt, output=output))
+
+
+@main.command()
+@click.option('--collection-creator', '-c',
+              prompt='First Creator of the CMV2 Collection to Query', type=str,
+              help='First Creator of the CMV2 Collection to Query', required=True)
+@click.option('--fmt', '-f',
+              type=click.Choice(['json', 'csv', 'xlsx'], case_sensitive=False), default='json',
+              prompt='Please enter the specified output format.', required=True, help='File type of saved file.')
+@click.option('--rpc', default=get_rpc(), callback=rpc_handler, prompt='Desired RPC URL', expose_value=True,
+              help='RPC to use during program execution.')
+@click.option('--refresh', is_flag=True, help='Refresh metadata accounts (new mints, updated metadata).')
+@click.option('--output', '-o', required=False, show_default=False, help="Choose an output path.")
+def get_metadata(collection_creator, fmt, rpc, refresh, output):
+    """Takes snapshot of [owner, token_account, mint_id] and saves in the specified format."""
+    asyncio.run(
+        dl_metadata(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, fmt=fmt, output=output))
 
 
 if __name__ == '__main__':

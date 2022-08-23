@@ -108,14 +108,22 @@ async def dl_hashlist(*, collection_creator, rpc, refresh, fmt, output):
     handle_save(data=df, name=f'hash-list_{collection_creator}', directory='hash_lists', fmt=fmt, output=output)
 
 
-async def dl_metadata(*, collection_creator, rpc, refresh, fmt, output):
+async def dl_metadata(*, collection_creator, rpc, refresh, output):
     nfts: List[MetaplexNFT] = get_metaplex_metadata_accounts(
         collection_creator=collection_creator,
         rpc=rpc,
         refresh=refresh)
     rows = [asdict(nft.account_metadata) for nft in nfts]
-    df = DataFrame(rows)
-    handle_save(data=df, name=f'metadata_{collection_creator}', directory='metadata', fmt=fmt, output=output,
-                orient='records')
+    data = {'metadata': rows}
 
+    if output is None:
+        save_dir = os.path.join(OUTPUT_DIR, 'metadata')
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
 
+        save_path = os.path.join(save_dir, f'metadata_{collection_creator}.json')
+    else:
+        save_path = output
+
+    with open(save_path, 'w') as f:
+        f.write(json.dumps(data))

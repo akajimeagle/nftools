@@ -98,17 +98,14 @@ def snapshot(collection_creator, fmt, rpc, refresh, output):
 @click.option('--collection-creator', '-c',
               prompt='First Creator of the CMV2 Collection to Query', type=str,
               help='First Creator of the CMV2 Collection to Query', required=True)
-@click.option('--fmt', '-f',
-              type=click.Choice(['json', 'csv', 'xlsx'], case_sensitive=False), default='json',
-              prompt='Please enter the specified output format.', required=True, help='File type of saved file.')
 @click.option('--rpc', default=get_rpc(), callback=rpc_handler, prompt='Desired RPC URL', expose_value=True,
               help='RPC to use during program execution.')
 @click.option('--refresh', is_flag=True, help='Refresh metadata accounts (new mints, updated metadata).')
 @click.option('--output', '-o', required=False, show_default=False, help="Choose an output path.")
-def get_metadata(collection_creator, fmt, rpc, refresh, output):
+def get_metadata(collection_creator, rpc, refresh, output):
     """Takes snapshot of [owner, token_account, mint_id] and saves in the specified format."""
     asyncio.run(
-        dl_metadata(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, fmt=fmt, output=output))
+        dl_metadata(collection_creator=collection_creator, rpc=get_rpc(), refresh=refresh, output=output))
 
 
 if __name__ == '__main__':
